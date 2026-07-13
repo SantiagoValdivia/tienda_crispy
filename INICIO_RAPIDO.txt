@@ -1,0 +1,58 @@
+===========================================================
+  INICIO RAPIDO — 3 PASOS, SOLO LA PRIMERA VEZ
+===========================================================
+
+PASO 1 — Cargar la base de datos (solo se hace UNA vez)
+-----------------------------------------------------------
+Haz doble clic en:
+
+    CARGAR_BASE_DE_DATOS.bat
+
+Te va a pedir tu password de Oracle (usuario "system").
+Esto crea las tablas y los datos de ejemplo.
+
+Si te da error "no se encontro sqlplus": abre SQL Developer,
+conecta con tu Oracle, abre el archivo oracle\schema.sql,
+y dale a "Run Script" (o F5). Es lo mismo, solo manual.
+
+
+PASO 2 — Poner tu password en el archivo de configuracion
+-----------------------------------------------------------
+Abre con el Bloc de notas:
+
+    backend\.env
+
+Busca esta linea:
+
+    ORACLE_PASSWORD=PON_AQUI_TU_PASSWORD_DE_ORACLE
+
+Reemplaza el texto despues del "=" por tu password real
+de Oracle. Guarda el archivo (Ctrl+S) y cierralo.
+
+
+PASO 3 — Iniciar el backend
+-----------------------------------------------------------
+Haz doble clic en:
+
+    INICIAR_BACKEND.bat
+
+La primera vez instalara las dependencias automaticamente
+(tarda 1-2 minutos). Las siguientes veces arranca directo.
+
+Cuando veas el mensaje "Backend escuchando en
+http://localhost:8080", ya esta funcionando.
+
+
+===========================================================
+  LAS SIGUIENTES VECES
+===========================================================
+Solo necesitas el PASO 3: doble clic en INICIAR_BACKEND.bat
+Los pasos 1 y 2 no se repiten (ya quedan guardados).
+
+
+===========================================================
+  ¿ALGO NO FUNCIONO?
+===========================================================
+Revisa el archivo README.md para instrucciones detalladas,
+incluyendo el tema del Oracle Instant Client si aparece un
+error que empiece con "DPI-1047".

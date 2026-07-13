@@ -1,0 +1,208 @@
+<!--
+  frontend/panel-administrador.html
+  ---------------------------------------------------------------------
+  Panel para el rol ADMINISTRADOR.
+  Acceso completo: ver stock, ver usuarios, ver historial de movimientos,
+  crear nuevos usuarios (contraseña se guarda como hash bcrypt en Oracle,
+  nunca en texto plano) y registrar movimientos de cualquier tipo.
+  Usa: config.js (puerto) + js/api.js (fetch/sesión) + css/estilos.css
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Administrador</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="marca">
+    <h1>Panel Administrador</h1>
+    <span class="rol-badge">ADMINISTRADOR</span>
+  </div>
+  <div class="estado-puerto">
+    <span class="punto" id="punto-estado"></span>
+    <span id="txt-estado">conectando…</span>
+  </div>
+  <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+</div>
+
+<div class="contenedor">
+
+  <div class="rejilla">
+    <div class="tarjeta">
+      <h2>Productos en stock</h2>
+      <div class="valor-grande" id="kpi-productos">—</div>
+    </div>
+    <div class="tarjeta">
+      <h2>Usuarios registrados</h2>
+      <div class="valor-grande" id="kpi-usuarios">—</div>
+    </div>
+    <div class="tarjeta">
+      <h2>Movimientos totales</h2>
+      <div class="valor-grande" id="kpi-movimientos">—</div>
+    </div>
+  </div>
+
+  <div class="rejilla" style="grid-template-columns: 1.3fr 1fr;">
+    <div class="tarjeta">
+      <h2>Inventario (stock)</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Producto</th><th>Cantidad</th><th>Unidad</th></tr></thead>
+        <tbody id="tabla-stock"></tbody>
+      </table>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Crear nuevo usuario</h2>
+      <form id="form-usuario">
+        <label>Nombre</label>
+        <input id="nu-nombre" required>
+        <label>Correo</label>
+        <input id="nu-email" type="email" required>
+        <label>Contraseña (se guarda cifrada/hasheada)</label>
+        <input id="nu-password" type="password" minlength="8" required>
+        <label>Rol</label>
+        <select id="nu-rol">
+          <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+          <option value="DISTRIBUIDOR">DISTRIBUIDOR</option>
+          <option value="VENDEDOR">VENDEDOR</option>
+        </select>
+        <div id="msg-usuario" class="mensaje"></div>
+        <button class="principal" type="submit">Crear usuario</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="rejilla" style="grid-template-columns: 1fr 1fr;">
+    <div class="tarjeta">
+      <h2>Usuarios</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th></tr></thead>
+        <tbody id="tabla-usuarios"></tbody>
+      </table>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Registrar movimiento</h2>
+      <form id="form-movimiento">
+        <label>Producto (stock)</label>
+        <select id="mv-stock" required></select>
+        <label>Tipo</label>
+        <select id="mv-tipo">
+          <option value="ENTRADA">ENTRADA</option>
+          <option value="SALIDA">SALIDA</option>
+        </select>
+        <label>Cantidad</label>
+        <input id="mv-cantidad" type="number" min="1" required>
+        <div id="msg-movimiento" class="mensaje"></div>
+        <button class="principal" type="submit">Registrar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial de movimientos</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Rol</th><th>Fecha</th></tr></thead>
+      <tbody id="tabla-movimientos"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const sesion = protegerPagina(["ADMINISTRADOR"]);
+
+  async function cargarTodo() {
+    try {
+      const [stock, usuarios, movimientos] = await Promise.all([
+        apiFetch("/stock"),
+        apiFetch("/usuarios"),
+        apiFetch("/movimientos"),
+      ]);
+
+      document.getElementById("punto-estado").className = "punto ok";
+      document.getElementById("txt-estado").textContent =
+        "backend en puerto " + APP_CONFIG.BACKEND_PORT;
+
+      document.getElementById("kpi-productos").textContent = stock.length;
+      document.getElementById("kpi-usuarios").textContent = usuarios.length;
+      document.getElementById("kpi-movimientos").textContent = movimientos.length;
+
+      document.getElementById("tabla-stock").innerHTML = stock.map(s =>
+        `<tr><td class="mono">${s.ID}</td><td>${s.PRODUCTO}</td><td class="mono">${s.CANTIDAD}</td><td>${s.UNIDAD}</td></tr>`
+      ).join("");
+
+      document.getElementById("tabla-usuarios").innerHTML = usuarios.map(u =>
+        `<tr><td class="mono">${u.ID}</td><td>${u.NOMBRE}</td><td>${u.EMAIL}</td><td>${u.ROL}</td></tr>`
+      ).join("");
+
+      document.getElementById("tabla-movimientos").innerHTML = movimientos.map(m =>
+        `<tr><td class="mono">${m.ID}</td><td>${m.PRODUCTO || m.STOCK_ID}</td>
+         <td><span class="chip ${m.TIPO === 'ENTRADA' ? 'entrada' : 'salida'}">${m.TIPO}</span></td>
+         <td class="mono">${m.CANTIDAD}</td><td>${m.ROL}</td>
+         <td class="mono">${new Date(m.FECHA).toLocaleString()}</td></tr>`
+      ).join("");
+
+      document.getElementById("mv-stock").innerHTML = stock.map(s =>
+        `<option value="${s.ID}">${s.PRODUCTO}</option>`
+      ).join("");
+    } catch (err) {
+      document.getElementById("punto-estado").className = "punto error";
+      document.getElementById("txt-estado").textContent = "sin conexión: " + err.message;
+    }
+  }
+
+  document.getElementById("form-usuario").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("msg-usuario");
+    try {
+      await registrarUsuario(
+        document.getElementById("nu-nombre").value,
+        document.getElementById("nu-email").value,
+        document.getElementById("nu-password").value,
+        document.getElementById("nu-rol").value
+      );
+      msg.className = "mensaje ok";
+      msg.textContent = "Usuario creado. Contraseña guardada como hash bcrypt.";
+      e.target.reset();
+      cargarTodo();
+    } catch (err) {
+      msg.className = "mensaje error";
+      msg.textContent = err.message;
+    }
+  });
+
+  document.getElementById("form-movimiento").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("msg-movimiento");
+    try {
+      await apiFetch("/movimientos", {
+        method: "POST",
+        body: JSON.stringify({
+          stockId: Number(document.getElementById("mv-stock").value),
+          usuarioId: sesion.usuario.id,
+          tipo: document.getElementById("mv-tipo").value,
+          cantidad: Number(document.getElementById("mv-cantidad").value),
+          rol: sesion.usuario.rol,
+        }),
+      });
+      msg.className = "mensaje ok";
+      msg.textContent = "Movimiento registrado.";
+      e.target.reset();
+      cargarTodo();
+    } catch (err) {
+      msg.className = "mensaje error";
+      msg.textContent = err.message;
+    }
+  });
+
+  cargarTodo();
+</script>
+</body>
+</html>

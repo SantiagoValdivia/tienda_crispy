@@ -1,0 +1,20 @@
+{
+  "name": "panel-backend",
+  "version": "1.0.0",
+  "description": "Backend Node/Express conectado a Oracle XE, con capa de eventos GCP (Pub/Sub + FCM) desactivable",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "oracledb": "^6.5.1",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "@google-cloud/pubsub": "^4.7.0",
+    "firebase-admin": "^12.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

@@ -1,0 +1,133 @@
+<!--
+  frontend/panel-distribuidor.html
+  ---------------------------------------------------------------------
+  Panel para el rol DISTRIBUIDOR.
+  Enfocado en operación: ver inventario, registrar entradas/salidas de
+  stock y consultar el historial. No administra usuarios.
+  Usa: config.js (puerto) + js/api.js (fetch/sesión) + css/estilos.css
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Distribuidor</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="marca">
+    <h1>Panel Distribuidor</h1>
+    <span class="rol-badge">DISTRIBUIDOR</span>
+  </div>
+  <div class="estado-puerto">
+    <span class="punto" id="punto-estado"></span>
+    <span id="txt-estado">conectando…</span>
+  </div>
+  <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+</div>
+
+<div class="contenedor">
+
+  <div class="rejilla" style="grid-template-columns: 1fr 1fr;">
+    <div class="tarjeta">
+      <h2>Registrar movimiento de stock</h2>
+      <form id="form-movimiento">
+        <label>Producto</label>
+        <select id="mv-stock" required></select>
+        <label>Tipo</label>
+        <select id="mv-tipo">
+          <option value="ENTRADA">ENTRADA</option>
+          <option value="SALIDA">SALIDA</option>
+        </select>
+        <label>Cantidad</label>
+        <input id="mv-cantidad" type="number" min="1" required>
+        <div id="msg-movimiento" class="mensaje"></div>
+        <button class="principal" type="submit">Registrar</button>
+      </form>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Inventario actual</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Producto</th><th>Cantidad</th><th>Unidad</th></tr></thead>
+        <tbody id="tabla-stock"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial de movimientos</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th></tr></thead>
+      <tbody id="tabla-movimientos"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const sesion = protegerPagina(["DISTRIBUIDOR"]);
+
+  async function cargarTodo() {
+    try {
+      const [stock, movimientos] = await Promise.all([
+        apiFetch("/stock"),
+        apiFetch("/movimientos"),
+      ]);
+
+      document.getElementById("punto-estado").className = "punto ok";
+      document.getElementById("txt-estado").textContent =
+        "backend en puerto " + APP_CONFIG.BACKEND_PORT;
+
+      document.getElementById("tabla-stock").innerHTML = stock.map(s =>
+        `<tr><td class="mono">${s.ID}</td><td>${s.PRODUCTO}</td><td class="mono">${s.CANTIDAD}</td><td>${s.UNIDAD}</td></tr>`
+      ).join("");
+
+      document.getElementById("mv-stock").innerHTML = stock.map(s =>
+        `<option value="${s.ID}">${s.PRODUCTO}</option>`
+      ).join("");
+
+      document.getElementById("tabla-movimientos").innerHTML = movimientos.map(m =>
+        `<tr><td class="mono">${m.ID}</td><td>${m.PRODUCTO || m.STOCK_ID}</td>
+         <td><span class="chip ${m.TIPO === 'ENTRADA' ? 'entrada' : 'salida'}">${m.TIPO}</span></td>
+         <td class="mono">${m.CANTIDAD}</td>
+         <td class="mono">${new Date(m.FECHA).toLocaleString()}</td></tr>`
+      ).join("");
+    } catch (err) {
+      document.getElementById("punto-estado").className = "punto error";
+      document.getElementById("txt-estado").textContent = "sin conexión: " + err.message;
+    }
+  }
+
+  document.getElementById("form-movimiento").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("msg-movimiento");
+    try {
+      await apiFetch("/movimientos", {
+        method: "POST",
+        body: JSON.stringify({
+          stockId: Number(document.getElementById("mv-stock").value),
+          usuarioId: sesion.usuario.id,
+          tipo: document.getElementById("mv-tipo").value,
+          cantidad: Number(document.getElementById("mv-cantidad").value),
+          rol: sesion.usuario.rol,
+        }),
+      });
+      msg.className = "mensaje ok";
+      msg.textContent = "Movimiento registrado.";
+      e.target.reset();
+      cargarTodo();
+    } catch (err) {
+      msg.className = "mensaje error";
+      msg.textContent = err.message;
+    }
+  });
+
+  cargarTodo();
+</script>
+</body>
+</html>

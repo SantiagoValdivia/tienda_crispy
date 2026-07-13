@@ -1,0 +1,130 @@
+<!--
+  frontend/panel-vendedor.html
+  ---------------------------------------------------------------------
+  Panel para el rol VENDEDOR (cara al cliente/punto de venta).
+  Solo ve el stock disponible y registra salidas (ventas). No ve
+  usuarios ni información administrativa.
+  Usa: config.js (puerto) + js/api.js (fetch/sesión) + css/estilos.css
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Vendedor</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="marca">
+    <h1>Panel Vendedor</h1>
+    <span class="rol-badge">VENDEDOR</span>
+  </div>
+  <div class="estado-puerto">
+    <span class="punto" id="punto-estado"></span>
+    <span id="txt-estado">conectando…</span>
+  </div>
+  <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+</div>
+
+<div class="contenedor">
+
+  <div class="rejilla" style="grid-template-columns: 1fr 1.3fr;">
+    <div class="tarjeta">
+      <h2>Registrar venta (salida de stock)</h2>
+      <form id="form-venta">
+        <label>Producto</label>
+        <select id="v-stock" required></select>
+        <label>Cantidad vendida</label>
+        <input id="v-cantidad" type="number" min="1" required>
+        <div id="msg-venta" class="mensaje"></div>
+        <button class="principal" type="submit">Registrar venta</button>
+      </form>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Stock disponible</h2>
+      <table>
+        <thead><tr><th>Producto</th><th>Disponible</th><th>Unidad</th></tr></thead>
+        <tbody id="tabla-stock"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Mis últimas ventas registradas</h2>
+    <table>
+      <thead><tr><th>Producto</th><th>Cantidad</th><th>Fecha</th></tr></thead>
+      <tbody id="tabla-ventas"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const sesion = protegerPagina(["VENDEDOR"]);
+
+  async function cargarTodo() {
+    try {
+      const [stock, movimientos] = await Promise.all([
+        apiFetch("/stock"),
+        apiFetch("/movimientos"),
+      ]);
+
+      document.getElementById("punto-estado").className = "punto ok";
+      document.getElementById("txt-estado").textContent =
+        "backend en puerto " + APP_CONFIG.BACKEND_PORT;
+
+      document.getElementById("tabla-stock").innerHTML = stock.map(s =>
+        `<tr><td>${s.PRODUCTO}</td><td class="mono">${s.CANTIDAD}</td><td>${s.UNIDAD}</td></tr>`
+      ).join("");
+
+      document.getElementById("v-stock").innerHTML = stock.map(s =>
+        `<option value="${s.ID}">${s.PRODUCTO}</option>`
+      ).join("");
+
+      const misVentas = movimientos
+        .filter(m => m.TIPO === "SALIDA" && m.USUARIO_ID === sesion.usuario.id)
+        .slice(0, 10);
+
+      document.getElementById("tabla-ventas").innerHTML = misVentas.map(m =>
+        `<tr><td>${m.PRODUCTO || m.STOCK_ID}</td><td class="mono">${m.CANTIDAD}</td>
+         <td class="mono">${new Date(m.FECHA).toLocaleString()}</td></tr>`
+      ).join("") || `<tr><td colspan="3" style="color:var(--tenue)">Aún no registras ventas.</td></tr>`;
+    } catch (err) {
+      document.getElementById("punto-estado").className = "punto error";
+      document.getElementById("txt-estado").textContent = "sin conexión: " + err.message;
+    }
+  }
+
+  document.getElementById("form-venta").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("msg-venta");
+    try {
+      await apiFetch("/movimientos", {
+        method: "POST",
+        body: JSON.stringify({
+          stockId: Number(document.getElementById("v-stock").value),
+          usuarioId: sesion.usuario.id,
+          tipo: "SALIDA",
+          cantidad: Number(document.getElementById("v-cantidad").value),
+          rol: sesion.usuario.rol,
+        }),
+      });
+      msg.className = "mensaje ok";
+      msg.textContent = "Venta registrada.";
+      e.target.reset();
+      cargarTodo();
+    } catch (err) {
+      msg.className = "mensaje error";
+      msg.textContent = err.message;
+    }
+  });
+
+  cargarTodo();
+</script>
+</body>
+</html>

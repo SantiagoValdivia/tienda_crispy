@@ -1,0 +1,166 @@
+<!--
+  frontend/mezclados.html
+  ---------------------------------------------------------------------
+  Panel COMBINADO (el que menciona el README y ARCHITECTURE.md).
+  Muestra stock + usuarios + movimientos en una sola pantalla, accesible
+  para cualquier rol logueado (no filtra por rol como los otros 3 paneles).
+  Antes este archivo solo simulaba el guardado con alert(); ahora hace
+  fetch real contra el backend, usando el puerto de config.js.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Combinado — mezclados</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="marca">
+    <h1>Panel Combinado</h1>
+    <span class="rol-badge" id="badge-rol">—</span>
+  </div>
+  <div class="estado-puerto">
+    <span class="punto" id="punto-estado"></span>
+    <span id="txt-estado">conectando…</span>
+  </div>
+  <button class="btn-salir" onclick="cerrarSesion()">Cerrar sesión</button>
+</div>
+
+<div class="contenedor">
+
+  <div class="rejilla">
+    <div class="tarjeta">
+      <h2>Productos</h2>
+      <div class="valor-grande" id="kpi-productos">—</div>
+    </div>
+    <div class="tarjeta">
+      <h2>Usuarios</h2>
+      <div class="valor-grande" id="kpi-usuarios">—</div>
+    </div>
+    <div class="tarjeta">
+      <h2>Movimientos</h2>
+      <div class="valor-grande" id="kpi-movimientos">—</div>
+    </div>
+  </div>
+
+  <div class="tarjeta" style="margin-bottom: 18px;">
+    <h2>Registrar movimiento</h2>
+    <form id="form" style="max-width: 420px;">
+      <label>Producto</label>
+      <select id="f-stock" required></select>
+      <label>Tipo</label>
+      <select id="f-tipo">
+        <option value="ENTRADA">ENTRADA</option>
+        <option value="SALIDA">SALIDA</option>
+      </select>
+      <label>Cantidad</label>
+      <input id="f-cantidad" type="number" min="1" required>
+      <div id="mensaje" class="mensaje"></div>
+      <button class="principal" type="submit">Guardar</button>
+    </form>
+  </div>
+
+  <div class="rejilla" style="grid-template-columns: 1fr 1fr;">
+    <div class="tarjeta">
+      <h2>Stock</h2>
+      <table>
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Unidad</th></tr></thead>
+        <tbody id="tabla-stock"></tbody>
+      </table>
+    </div>
+    <div class="tarjeta">
+      <h2>Usuarios</h2>
+      <table>
+        <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th></tr></thead>
+        <tbody id="tabla-usuarios"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial de movimientos</h2>
+    <table>
+      <thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Rol</th><th>Fecha</th></tr></thead>
+      <tbody id="tabla-movimientos"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const sesion = protegerPagina(); // cualquier rol logueado puede ver este panel
+  document.getElementById("badge-rol").textContent = sesion.usuario.rol;
+
+  async function cargarTodo() {
+    try {
+      const [stock, usuarios, movimientos] = await Promise.all([
+        apiFetch("/stock"),
+        apiFetch("/usuarios"),
+        apiFetch("/movimientos"),
+      ]);
+
+      document.getElementById("punto-estado").className = "punto ok";
+      document.getElementById("txt-estado").textContent =
+        "backend en puerto " + APP_CONFIG.BACKEND_PORT;
+
+      document.getElementById("kpi-productos").textContent = stock.length;
+      document.getElementById("kpi-usuarios").textContent = usuarios.length;
+      document.getElementById("kpi-movimientos").textContent = movimientos.length;
+
+      document.getElementById("tabla-stock").innerHTML = stock.map(s =>
+        `<tr><td>${s.PRODUCTO}</td><td class="mono">${s.CANTIDAD}</td><td>${s.UNIDAD}</td></tr>`
+      ).join("");
+
+      document.getElementById("f-stock").innerHTML = stock.map(s =>
+        `<option value="${s.ID}">${s.PRODUCTO}</option>`
+      ).join("");
+
+      document.getElementById("tabla-usuarios").innerHTML = usuarios.map(u =>
+        `<tr><td>${u.NOMBRE}</td><td>${u.EMAIL}</td><td>${u.ROL}</td></tr>`
+      ).join("");
+
+      document.getElementById("tabla-movimientos").innerHTML = movimientos.map(m =>
+        `<tr><td>${m.PRODUCTO || m.STOCK_ID}</td>
+         <td><span class="chip ${m.TIPO === 'ENTRADA' ? 'entrada' : 'salida'}">${m.TIPO}</span></td>
+         <td class="mono">${m.CANTIDAD}</td><td>${m.ROL}</td>
+         <td class="mono">${new Date(m.FECHA).toLocaleString()}</td></tr>`
+      ).join("");
+    } catch (err) {
+      document.getElementById("punto-estado").className = "punto error";
+      document.getElementById("txt-estado").textContent = "sin conexión: " + err.message;
+    }
+  }
+
+  document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("mensaje");
+    try {
+      await apiFetch("/movimientos", {
+        method: "POST",
+        body: JSON.stringify({
+          stockId: Number(document.getElementById("f-stock").value),
+          usuarioId: sesion.usuario.id,
+          tipo: document.getElementById("f-tipo").value,
+          cantidad: Number(document.getElementById("f-cantidad").value),
+          rol: sesion.usuario.rol,
+        }),
+      });
+      msg.className = "mensaje ok";
+      msg.textContent = "Movimiento guardado en Oracle (ya no es un alert() simulado).";
+      e.target.reset();
+      cargarTodo();
+    } catch (err) {
+      msg.className = "mensaje error";
+      msg.textContent = err.message;
+    }
+  });
+
+  cargarTodo();
+</script>
+</body>
+</html>

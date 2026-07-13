@@ -1,0 +1,268 @@
+/* =====================================================================
+   frontend/css/estilos.css
+   Tema visual: sala de control de un puerto/almacén.
+   Paleta:
+     --bg:        #0B1220  fondo principal
+     --panel:     #121B2E  tarjetas / paneles
+     --linea:     #23314D  bordes y divisores
+     --texto:     #E7ECF5  texto principal
+     --tenue:     #7C8AA5  texto secundario
+     --cian:      #22D3EE  acento "puerto / datos en vivo"
+     --ambar:     #F5A623  acento "movimientos / alertas"
+     --rojo:      #F0546A  errores / salidas de stock
+   Tipografía: "Space Grotesk" (display), "Inter" (texto), "JetBrains Mono" (datos)
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #0B1220;
+  --panel: #121B2E;
+  --linea: #23314D;
+  --texto: #E7ECF5;
+  --tenue: #7C8AA5;
+  --cian: #22D3EE;
+  --ambar: #F5A623;
+  --rojo: #F0546A;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  margin: 0;
+}
+
+code, .dato, .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* --- Barra superior: identifica el panel + estado de puerto/conexión --- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--linea);
+  background: linear-gradient(180deg, #0E1626 0%, #0B1220 100%);
+}
+
+.topbar .marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar .marca .rol-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--cian);
+  color: var(--cian);
+}
+
+.estado-puerto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--tenue);
+}
+
+.punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tenue);
+  box-shadow: 0 0 0 0 rgba(34,211,238,0.6);
+}
+.punto.ok {
+  background: var(--cian);
+  animation: pulso 2s infinite;
+}
+.punto.error { background: var(--rojo); }
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgba(34,211,238,0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(34,211,238,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+}
+
+.btn-salir {
+  background: transparent;
+  border: 1px solid var(--linea);
+  color: var(--tenue);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+.btn-salir:hover { border-color: var(--rojo); color: var(--rojo); }
+
+/* --- Layout general --- */
+.contenedor {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.tarjeta {
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.tarjeta h2 {
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: var(--tenue);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.tarjeta .valor-grande {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  color: var(--cian);
+}
+
+/* --- Tablas --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--linea);
+}
+th {
+  color: var(--tenue);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+tr:hover td { background: rgba(34,211,238,0.04); }
+
+.chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.chip.entrada { color: var(--cian); border: 1px solid var(--cian); }
+.chip.salida { color: var(--ambar); border: 1px solid var(--ambar); }
+
+/* --- Formularios --- */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+label {
+  font-size: 12px;
+  color: var(--tenue);
+  margin-bottom: -6px;
+}
+input, select {
+  background: #0E1626;
+  border: 1px solid var(--linea);
+  color: var(--texto);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--cian);
+}
+button.principal {
+  background: var(--cian);
+  color: #062024;
+  border: none;
+  padding: 11px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+button.principal:hover { filter: brightness(1.08); }
+button.principal:focus-visible { outline: 2px solid var(--texto); outline-offset: 2px; }
+
+.mensaje {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: none;
+}
+.mensaje.ok { display: block; background: rgba(34,211,238,0.1); color: var(--cian); }
+.mensaje.error { display: block; background: rgba(240,84,106,0.1); color: var(--rojo); }
+
+/* --- Login (index.html) --- */
+.login-envoltura {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-caja {
+  width: 100%;
+  max-width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  padding: 32px;
+}
+.login-caja .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cian);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.login-caja h1 {
+  font-size: 24px;
+  margin: 6px 0 4px;
+}
+.login-caja p.sub {
+  color: var(--tenue);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.puerto-footer {
+  margin-top: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--tenue);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .contenedor { padding: 18px; }
+  .topbar { padding: 14px 18px; flex-wrap: wrap; gap: 10px; }
+}
