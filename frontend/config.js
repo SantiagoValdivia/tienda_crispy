@@ -22,7 +22,7 @@ const APP_CONFIG = {
   // Host donde corre el backend. En local es localhost.
   // Cuando subas el backend a la nube (Render/Railway/Cloud Run),
   // cambia esto por ejemplo a: "https://mi-backend.onrender.com"
-  BACKEND_HOST: "http://localhost",
+  BACKEND_HOST: "https://backend-tienda-crispy.onrender.com/",
 
   // URL completa que arma automáticamente host + puerto + /api.
   // No la edites directamente: cambia BACKEND_HOST / BACKEND_PORT arriba.
